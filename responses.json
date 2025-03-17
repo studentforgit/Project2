@@ -1,0 +1,15 @@
+{
+  "answer": {
+    "args": {
+      "email": "21f3001993@ds.study.iitm.ac.in"
+    },
+    "headers": {
+      "Accept": "*/*",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Host": "httpbin.org",
+      "User-Agent": "python-httpx/0.21.1"
+    },
+    "origin": "<your-ip>",
+    "url": "https://httpbin.org/get?email=21f3001993@ds.study.iitm.ac.in"
+  }
+}
