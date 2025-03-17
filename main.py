@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Hello, Vercel!"
+    return "Hello, Checking Vercel!"
 
 
 
