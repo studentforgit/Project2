@@ -88,6 +88,11 @@ def process_question(question, extracted_data):
         except Exception as e:
             return f"Error processing question: {str(e)}"
 
+    if "What's the result when you paste the JSON at tools-in-data-science.pages.dev/jsonhash and click the Hash button" in question:
+        file_path = "q-multi-cursor-json.txt"
+        json_object = convert_txt_to_json(file_path)
+        return json.dumps(json_object, separators=(",", ":"))
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
@@ -241,6 +246,33 @@ def sort_json_array(json_array):
         return json.dumps(sorted_array, separators=(",", ":"))
     except Exception as e:
         return f"Error sorting JSON array: {str(e)}"
+
+def convert_txt_to_json(file_path):
+    """
+    Converts a text file with key=value pairs into a JSON object and computes its hash value.
+
+    Args:
+        file_path (str): Path to the text file.
+
+    Returns:
+        dict: A JSON object with key-value pairs.
+        str: The hash value of the JSON object.
+    """
+    try:
+        json_object = {}
+        with open(file_path, 'r') as file:
+            for line in file:
+                if '=' in line:
+                    key, value = line.strip().split('=', 1)
+                    json_object[key] = value
+
+        # Compute the hash value of the JSON object
+        json_string = json.dumps(json_object, separators=(',', ':'))
+        hash_value = hashlib.sha256(json_string.encode('utf-8')).hexdigest()
+
+        return hash_value
+    except Exception as e:
+        return f"Error converting text to JSON: {str(e)}", None
 
 
 
