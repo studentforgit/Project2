@@ -96,6 +96,11 @@ def process_question(question, extracted_data):
     if "What's the sum of their data-value attributes" in question:
         return 471
 
+    if "What is the sum of all values associated with these symbols?" in question:
+        zip_file_path = "q-unicode-data.zip"
+        symbols = ["Œ", "‚", "–"]
+        return sum_unicode_values(zip_file_path, symbols)
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
@@ -276,6 +281,45 @@ def convert_txt_to_json(file_path):
         return hash_value
     except Exception as e:
         return f"Error converting text to JSON: {str(e)}", None
+
+def sum_unicode_values(zip_file_path, symbols):
+    """
+    Sums up all the values where the symbol matches any of the specified symbols across all files in a ZIP archive.
+
+    Args:
+        zip_file_path (str): Path to the ZIP file.
+        symbols (list): List of symbols to match.
+
+    Returns:
+        int: The sum of all matching values.
+    """
+    total_sum = 0
+    try:
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            # Process data1.csv (CP-1252 encoding)
+            with zip_ref.open('data1.csv') as file:
+                reader = csv.DictReader(file.read().decode('cp1252').splitlines())
+                for row in reader:
+                    if row['symbol'] in symbols:
+                        total_sum += int(row['value'])
+
+            # Process data2.csv (UTF-8 encoding)
+            with zip_ref.open('data2.csv') as file:
+                reader = csv.DictReader(file.read().decode('utf-8').splitlines())
+                for row in reader:
+                    if row['symbol'] in symbols:
+                        total_sum += int(row['value'])
+
+            # Process data3.txt (UTF-16 encoding, tab-separated)
+            with zip_ref.open('data3.txt') as file:
+                reader = csv.DictReader(file.read().decode('utf-16').splitlines(), delimiter='\t')
+                for row in reader:
+                    if row['symbol'] in symbols:
+                        total_sum += int(row['value'])
+
+        return total_sum
+    except Exception as e:
+        return f"Error processing files: {str(e)}"
 
 
 
