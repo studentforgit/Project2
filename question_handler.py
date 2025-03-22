@@ -146,6 +146,14 @@ def process_question(question, extracted_data):
         file2_name = "b.txt"
         return compare_files(zip_file_path, file1_name, file2_name)
 
+    if "What is the total sales of all the items in the \"Gold\" ticket type" in question:
+        # Return the SQL query instead of calculating the total sales
+        return (
+            "SELECT SUM(units * price) AS total_sales "
+            "FROM tickets "
+            "WHERE LOWER(TRIM(type)) = 'gold';"
+        )
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
@@ -561,6 +569,7 @@ def compare_files(zip_file_path, file1_name, file2_name):
         return differing_lines
     except Exception as e:
         return f"Error comparing files: {str(e)}"
+
 
 
 
