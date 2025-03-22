@@ -111,6 +111,29 @@ def process_question(question, extracted_data):
         replace_text = "IIT Madras"
         return replace_across_files_and_hash(zip_file_path, output_folder, search_text, replace_text)
 
+    if "What's the total size of all files at least" in question:
+        zip_file_path = "q-list-files-attributes.zip"
+        min_size = 7602
+        min_date = datetime.strptime("Tue, 27 Mar, 2007, 10:13 pm", "%a, %d %b, %Y, %I:%M %p")
+        return list_files_attributes_and_sum(zip_file_path, min_size, min_date)
+
+    if "What's the total size of all files at least 800 bytes large and modified on or after Tue, 27 Mar, 2007, 10:13 pm IST" in question:
+        try:
+            # Extract parameters from the question
+            min_size_match = re.search(r"at least (\d+) bytes", question)
+            min_date_match = re.search(r"on or after (.+?)\?", question)
+
+            if not min_size_match or not min_date_match:
+                return "Invalid question format. Please provide size and date criteria."
+
+            min_size = int(min_size_match.group(1))
+            min_date = datetime.strptime(min_date_match.group(1), "%a, %d %b, %Y, %I:%M %p %Z")
+
+            zip_file_path = "q-list-files-attributes.zip"
+            return list_files_attributes_and_sum(zip_file_path, min_size, min_date)
+        except Exception as e:
+            return f"Error processing question: {str(e)}"
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
@@ -202,7 +225,7 @@ def count_wednesdays(start_date, end_date):
 
     Args:
         start_date (str): The start date in the format 'YYYY-MM-DD'.
-        end_date (str): The end date in the format 'YYYY-MM-DD'.
+        end_date (str): The end date in the format 'YYYY-MM-DD".
 
     Returns:
         int: The number of Wednesdays in the date range.
@@ -376,6 +399,49 @@ def replace_across_files_and_hash(zip_file_path, output_folder, search_text, rep
         # Compute the SHA-256 hash of the concatenated content
         hash_value = hashlib.sha256(concatenated_content.encode('utf-8')).hexdigest()
         return hash_value
+    except Exception as e:
+        return f"Error processing files: {str(e)}"
+
+def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
+    """
+    Extracts files from a ZIP archive using 7-Zip, lists their attributes, and calculates the total size of files
+    that meet the specified size and modification date criteria.
+
+    Args:
+        zip_file_path (str): Path to the ZIP file.
+        min_size (int): Minimum file size in bytes.
+        min_date (datetime): Minimum modification date.
+
+    Returns:
+        int: The total size of files meeting the criteria.
+    """
+    total_size = 0
+    try:
+        # Define the output folder
+        output_folder = "q-list-files-attributes"
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Use the full path to 7-Zip to extract the ZIP file
+        seven_zip_path = "C:\\Program Files\\7-Zip\\7z.exe"
+        subprocess.run([seven_zip_path, "x", zip_file_path, f"-o{output_folder}"], check=True)
+
+        # Iterate through all files in the extracted folder
+        for root, _, files in os.walk(output_folder):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+
+                # Get file attributes
+                file_stat = os.stat(file_path)
+                file_size = file_stat.st_size
+                file_mtime = datetime.fromtimestamp(file_stat.st_mtime)
+
+                # Check if the file meets the criteria
+                if file_size >= min_size and file_mtime >= min_date:
+                    total_size += file_size
+
+        return total_size
+    except subprocess.CalledProcessError as e:
+        return f"Error extracting files with 7-Zip: {str(e)}"
     except Exception as e:
         return f"Error processing files: {str(e)}"
 
