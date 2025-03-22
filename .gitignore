@@ -19,3 +19,4 @@ Thumbs.db
 # Ignore PDF files
 *.pdf
 .vercel
+.env*.local

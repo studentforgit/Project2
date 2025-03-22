@@ -1,17 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import logging
 from file_handler import process_uploaded_file
 from question_handler import process_question
+
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/')
-def home():
-    return "Hello, Checking Vercel!"
-
-
+@app.route("/", methods=["GET", "POST"])
+def index():
+    return "Hello, World!"
 
 @app.route('/api/', methods=['POST', 'OPTIONS'])
 def answer_question():
@@ -41,5 +42,8 @@ def _corsify_actual_response(response):
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
+# Allow running locally with Flask
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8000)  # Local execution
+
+# Directly expose the Flask app as `app` for Vercel
