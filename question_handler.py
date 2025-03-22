@@ -7,6 +7,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import re
 import numpy as np
 from datetime import datetime, timedelta
+import zipfile
+import csv
 
 def process_question(question, extracted_data):
     """
@@ -69,6 +71,20 @@ def process_question(question, extracted_data):
 
             start_date, end_date = dates
             return count_wednesdays(start_date, end_date)
+        except Exception as e:
+            return f"Error processing question: {str(e)}"
+
+    if "Extract CSV from a ZIP" in question or "value in the \"answer\" column of the CSV file" in question:
+        zip_file_path = "q-extract-csv-zip.zip"
+        csv_file_name = "extract.csv"
+        column_name = "answer"
+        return extract_csv_answer(zip_file_path, csv_file_name, column_name)
+
+    if "Sort this JSON array of objects" in question:
+        try:
+            # Extract the JSON array from the question
+            json_array = json.loads(re.search(r'\[(.*?)\]', question).group(0))
+            return sort_json_array(json_array)
         except Exception as e:
             return f"Error processing question: {str(e)}"
 
@@ -185,6 +201,46 @@ def count_wednesdays(start_date, end_date):
         return wednesday_count
     except Exception as e:
         return f"Error in calculation: {str(e)}"
+
+def extract_csv_answer(zip_file_path, csv_file_name, column_name):
+    """
+    Extracts the value from a specific column in the first row of a CSV file inside a ZIP archive.
+
+    Args:
+        zip_file_path (str): Path to the ZIP file.
+        csv_file_name (str): Name of the CSV file inside the ZIP.
+        column_name (str): Name of the column to extract the value from.
+
+    Returns:
+        str: The value in the specified column of the first row, or an error message if not found.
+    """
+    try:
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            # Extract the CSV file
+            with zip_ref.open(csv_file_name) as csv_file:
+                reader = csv.DictReader(csv_file.read().decode('utf-8').splitlines())
+                for row in reader:
+                    return row.get(column_name, "Column not found")
+        return "CSV file not found in the ZIP archive."
+    except Exception as e:
+        return f"Error extracting CSV: {str(e)}"
+
+def sort_json_array(json_array):
+    """
+    Sorts a JSON array of objects by the value of the 'age' field. In case of a tie, sorts by the 'name' field.
+
+    Args:
+        json_array (list): A list of dictionaries representing the JSON array.
+
+    Returns:
+        str: The sorted JSON array as a string without spaces or newlines.
+    """
+    try:
+        # Sort by 'age' first, then by 'name' in case of a tie
+        sorted_array = sorted(json_array, key=lambda x: (x['age'], x['name']))
+        return json.dumps(sorted_array, separators=(",", ":"))
+    except Exception as e:
+        return f"Error sorting JSON array: {str(e)}"
 
 
 
