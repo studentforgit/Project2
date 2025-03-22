@@ -14,20 +14,29 @@ CORS(app)
 def index():
     return "Hello, World!"
 
-@app.route('/api/', methods=['POST', 'OPTIONS'])
+@app.route('/favicon.ico')
+def favicon():
+    return app.send_static_file('favicon.ico')
+
+@app.route('/api/', methods=['GET', 'POST', 'OPTIONS'])
 def answer_question():
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
-    
-    question = request.form.get('question')
-    file = request.files.get('file')
-    
+
+    # Handle GET requests with query parameters
+    if request.method == 'GET':
+        question = request.args.get('question')
+    else:
+        question = request.form.get('question')
+
+    file = request.files.get('file') if request.method == 'POST' else None
+
     if not question:
         return jsonify({'error': 'No question provided'}), 400
-    
+
     extracted_data = process_uploaded_file(file) if file else None
     answer = process_question(question, extracted_data)
-    
+
     return _corsify_actual_response(jsonify({'answer': str(answer)}))
 
 # Helper functions to handle CORS responses
