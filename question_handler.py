@@ -101,6 +101,9 @@ def process_question(question, extracted_data):
         symbols = ["Œ", "‚", "–"]
         return sum_unicode_values(zip_file_path, symbols)
 
+    if "Enter the raw Github URL of email.json so we can verify it." in question:
+        return "https://raw.githubusercontent.com/studentfor6/my-tds/refs/heads/main/email.json"
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
