@@ -104,6 +104,13 @@ def process_question(question, extracted_data):
     if "Enter the raw Github URL of email.json so we can verify it." in question:
         return "https://raw.githubusercontent.com/studentfor6/my-tds/refs/heads/main/email.json"
 
+    if "What does running cat * | sha256sum in that folder show in bash?" in question:
+        zip_file_path = "q-replace-across-files.zip"
+        output_folder = "q-replace-output"
+        search_text = "IITM"
+        replace_text = "IIT Madras"
+        return replace_across_files_and_hash(zip_file_path, output_folder, search_text, replace_text)
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
@@ -321,6 +328,54 @@ def sum_unicode_values(zip_file_path, symbols):
                         total_sum += int(row['value'])
 
         return total_sum
+    except Exception as e:
+        return f"Error processing files: {str(e)}"
+
+def replace_across_files_and_hash(zip_file_path, output_folder, search_text, replace_text):
+    """
+    Unzips a ZIP file into a folder, replaces all occurrences of a text (case-insensitive) with another text in all files,
+    and computes the SHA-256 hash of the concatenated file contents.
+
+    Args:
+        zip_file_path (str): Path to the ZIP file.
+        output_folder (str): Path to the output folder where files will be extracted.
+        search_text (str): Text to search for (case-insensitive).
+        replace_text (str): Text to replace with.
+
+    Returns:
+        str: The SHA-256 hash of the concatenated file contents.
+    """
+    try:
+        # Create the output folder if it doesn't exist
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Unzip the files into the output folder
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(output_folder)
+
+        # Iterate through all files in the output folder
+        concatenated_content = ""
+        for root, _, files in os.walk(output_folder):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+
+                # Read the file content
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    content = file.read()
+
+                # Replace all occurrences of the search text with the replace text (case-insensitive)
+                updated_content = re.sub(search_text, replace_text, content, flags=re.IGNORECASE)
+
+                # Write the updated content back to the file
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(updated_content)
+
+                # Append the updated content to the concatenated content
+                concatenated_content += updated_content
+
+        # Compute the SHA-256 hash of the concatenated content
+        hash_value = hashlib.sha256(concatenated_content.encode('utf-8')).hexdigest()
+        return hash_value
     except Exception as e:
         return f"Error processing files: {str(e)}"
 
