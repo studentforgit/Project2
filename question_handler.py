@@ -2,6 +2,10 @@ import json
 import subprocess
 import os
 import hashlib
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import re
+import numpy as np
 
 def process_question(question, extracted_data):
     """
@@ -15,6 +19,41 @@ def process_question(question, extracted_data):
     
     if "npx -y prettier" in question:
         return answer_npx_prettier()
+    
+    if "=SUM(ARRAY_CONSTRAIN(SEQUENCE" in question:
+        try:
+            # Extract parameters from the question
+            params = re.findall(r'\d+', question)
+            if len(params) < 6:
+                return "Invalid question format. Please provide all required parameters."
+            
+            rows, cols, start, step, select_rows, select_cols = map(int, params)
+            return param_constrained_sum(rows, cols, start, step, select_rows, select_cols)
+        except Exception as e:
+            return f"Error processing question: {str(e)}"
+    
+    if "=SUM(TAKE(SORTBY" in question:
+        try:
+            # Extract arrays and parameters from the question
+            arrays = re.findall(r'\{[^}]*\}', question)
+            params = re.findall(r'\d+', question.split('TAKE')[1])  # Extract '1' and '7' from TAKE
+
+            if len(arrays) != 2:
+                return "Invalid question format: Two arrays are required."
+
+            if len(params) < 2:
+                return "Invalid question format: TAKE parameters are missing."
+
+            # Convert extracted arrays to lists of integers
+            values = list(map(int, arrays[0][1:-1].split(',')))  # Extract first array
+            sort_order = list(map(int, arrays[1][1:-1].split(',')))  # Extract second array
+
+            # Extract TAKE parameters
+            take_count = int(params[1])  # Number of elements to take
+
+            return sum_take_sortby(values, sort_order, take_count)
+        except Exception as e:
+            return f"Error processing question: {str(e)}"
     
     if extracted_data:
         return extract_answer_from_data(extracted_data)
@@ -49,11 +88,6 @@ def answer_npx_prettier():
         if not os.path.exists("README.md"):
             return "Error: README.md not found. Ensure the file is in the correct directory."
         
-        # Check if npx is installed
-        npx_check = subprocess.run("npx --version", shell=True, capture_output=True, text=True)
-        if npx_check.returncode != 0:
-            return f"Error: npx is not installed. Output: {npx_check.stderr}"
-        
         # Run Prettier
         prettier_result = subprocess.run(
             "npx -y prettier@3.4.2 README.md", 
@@ -71,6 +105,17 @@ def answer_npx_prettier():
     except Exception as e:
         return f"Exception occurred: {str(e)}"
 
+def param_constrained_sum(rows, cols, start, step, select_rows, select_cols):
+    # Generate the complete sequence matrix
+    matrix = [[start + step * (col + row * cols) for col in range(cols)] for row in range(rows)]
+    
+    # Apply constraints: select only the specified rows and columns
+    constrained = [matrix[row][:select_cols] for row in range(select_rows)]
+    
+    # Flatten the constrained array and calculate the sum
+    result = sum(sum(row) for row in constrained)
+    return result
+
 def extract_answer_from_data(data):
     if isinstance(data, dict):
         for key in data.keys():
@@ -79,3 +124,21 @@ def extract_answer_from_data(data):
     elif isinstance(data, str):
         return data[:200] + "..."
     return "No answer found in the provided data."
+
+def sum_take_sortby(values, sort_order, take_count):
+    try:
+        # Step 1: Sort 'values' by 'sort_order'
+        sorted_values = [x for _, x in sorted(zip(sort_order, values))]
+
+        # Step 2: Take the first 'take_count' elements
+        taken_values = sorted_values[:take_count]
+
+        # Step 3: Sum the taken values
+        result = sum(taken_values)
+
+        return result
+    except Exception as e:
+        return f"Error in calculation: {str(e)}"
+
+
+
