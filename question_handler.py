@@ -9,6 +9,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import zipfile
 import csv
+import shutil
 
 def process_question(question, extracted_data):
     """
@@ -133,6 +134,11 @@ def process_question(question, extracted_data):
             return list_files_attributes_and_sum(zip_file_path, min_size, min_date)
         except Exception as e:
             return f"Error processing question: {str(e)}"
+
+    if "What does running grep . * | LC_ALL=C sort | sha256sum in bash on that folder show?" in question:
+        zip_file_path = "q-move-rename-files.zip"
+        output_folder = "q-move-rename-files"
+        return move_and_rename_files(zip_file_path, output_folder)
 
     if extracted_data:
         return extract_answer_from_data(extracted_data)
@@ -442,6 +448,78 @@ def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
         return total_size
     except subprocess.CalledProcessError as e:
         return f"Error extracting files with 7-Zip: {str(e)}"
+    except Exception as e:
+        return f"Error processing files: {str(e)}"
+
+def move_and_rename_files(zip_file_path, output_folder):
+    """
+    Extracts files from a ZIP archive, moves all files under folders into a single folder,
+    renames all files by replacing each digit with the next, and computes the SHA-256 hash
+    of the sorted concatenated file contents.
+
+    Args:
+        zip_file_path (str): Path to the ZIP file.
+        output_folder (str): Path to the output folder where files will be processed.
+
+    Returns:
+        str: The SHA-256 hash of the sorted concatenated file contents.
+    """
+    try:
+        import stat
+
+        # Create the output folder if it doesn't exist
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Extract the ZIP file
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(output_folder)
+
+        # Change permissions for all folders and files in the extracted directory
+        for root, dirs, files in os.walk(output_folder):
+            for dir_name in dirs:
+                dir_path = os.path.join(root, dir_name)
+                os.chmod(dir_path, stat.S_IRWXU)  # Grant read, write, and execute permissions to the user
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                os.chmod(file_path, stat.S_IRWXU)  # Grant read, write, and execute permissions to the user
+
+        # Move all files under folders into the output folder
+        for root, dirs, files in os.walk(output_folder):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                try:
+                    if root != output_folder:  # Avoid moving files already in the output folder
+                        shutil.move(file_path, os.path.join(output_folder, file_name))
+                except Exception as e:
+                    print(f"Error moving file {file_name}: {e}")
+
+        # Rename all files by replacing each digit with the next
+        for file_name in os.listdir(output_folder):
+            old_file_path = os.path.join(output_folder, file_name)
+            try:
+                new_file_name = re.sub(r'\d', lambda x: str((int(x.group(0)) + 1) % 10), file_name)
+                new_file_path = os.path.join(output_folder, new_file_name)
+                os.rename(old_file_path, new_file_path)
+            except Exception as e:
+                print(f"Error renaming file {file_name}: {e}")
+
+        # Concatenate and sort file contents
+        concatenated_content = []
+        for file_name in sorted(os.listdir(output_folder)):
+            file_path = os.path.join(output_folder, file_name)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        concatenated_content.append(f"{file_name}:{line.strip()}\n")
+            except Exception as e:
+                print(f"Error reading file {file_name}: {e}")
+
+        # Sort the concatenated content line by line using LC_ALL=C behavior
+        sorted_content = "".join(sorted(concatenated_content, key=lambda x: x.encode('utf-8')))
+
+        # Compute the SHA-256 hash of the sorted concatenated content
+        hash_value = hashlib.sha256(sorted_content.encode('utf-8')).hexdigest()
+        return hash_value
     except Exception as e:
         return f"Error processing files: {str(e)}"
 
