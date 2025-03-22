@@ -140,6 +140,12 @@ def process_question(question, extracted_data):
         output_folder = "q-move-rename-files"
         return move_and_rename_files(zip_file_path, output_folder)
 
+    if "How many lines are different between a.txt and b.txt" in question:
+        zip_file_path = "q-compare-files.zip"
+        file1_name = "a.txt"
+        file2_name = "b.txt"
+        return compare_files(zip_file_path, file1_name, file2_name)
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
@@ -522,6 +528,39 @@ def move_and_rename_files(zip_file_path, output_folder):
         return hash_value
     except Exception as e:
         return f"Error processing files: {str(e)}"
+
+def compare_files(zip_file_path, file1_name, file2_name):
+    """
+    Compares two files line by line and counts the number of differing lines.
+
+    Args:
+        zip_file_path (str): Path to the ZIP file containing the files.
+        file1_name (str): Name of the first file.
+        file2_name (str): Name of the second file.
+
+    Returns:
+        int: The number of lines that are different between the two files.
+    """
+    try:
+        import zipfile
+
+        # Extract the ZIP file
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall("q-compare-files")
+
+        # Open the two files and compare line by line
+        file1_path = os.path.join("q-compare-files", file1_name)
+        file2_path = os.path.join("q-compare-files", file2_name)
+
+        differing_lines = 0
+        with open(file1_path, 'r', encoding='utf-8') as file1, open(file2_path, 'r', encoding='utf-8') as file2:
+            for line1, line2 in zip(file1, file2):
+                if line1.strip() != line2.strip():
+                    differing_lines += 1
+
+        return differing_lines
+    except Exception as e:
+        return f"Error comparing files: {str(e)}"
 
 
 
