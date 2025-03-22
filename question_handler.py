@@ -36,20 +36,21 @@ def process_question(question, extracted_data):
         try:
             # Extract arrays and parameters from the question
             arrays = re.findall(r'\{[^}]*\}', question)
-            params = re.findall(r'\d+', question.split('TAKE')[1])  # Extract '1' and '7' from TAKE
+            # params = re.findall(r'\d+', question.split('TAKE')[1])  # Extract '1' and '7' from TAKE
+            params = re.findall(r'TAKE\(.*?,\s*(\d+)\)', question)
+            print(params)
+            # if len(arrays) != 2:
+            #     return "Invalid question format: Two arrays are required."
 
-            if len(arrays) != 2:
-                return "Invalid question format: Two arrays are required."
-
-            if len(params) < 2:
-                return "Invalid question format: TAKE parameters are missing."
+            # if len(params) < 2:
+            #     return "Invalid question format: TAKE parameters are missing."
 
             # Convert extracted arrays to lists of integers
             values = list(map(int, arrays[0][1:-1].split(',')))  # Extract first array
             sort_order = list(map(int, arrays[1][1:-1].split(',')))  # Extract second array
 
             # Extract TAKE parameters
-            take_count = int(params[1])  # Number of elements to take
+            take_count = int(params[0])  # Number of elements to take
 
             return sum_take_sortby(values, sort_order, take_count)
         except Exception as e:
