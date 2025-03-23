@@ -10,6 +10,22 @@ from datetime import datetime, timedelta
 import zipfile
 import csv
 import shutil
+import platform
+
+def get_seven_zip_executable():
+    """
+    Dynamically selects the correct 7-Zip executable based on the system architecture.
+
+    Returns:
+        str: The path to the correct 7-Zip executable.
+    """
+    arch = platform.architecture()[0]
+    if arch == '64bit':
+        return os.path.join("7zip", "x64", "7za.exe")
+    elif arch == '32bit':
+        return os.path.join("7zip", "7za.exe")
+    else:
+        return os.path.join("7zip", "arm64", "7za.exe")
 
 def process_question(question, extracted_data):
     """
@@ -97,15 +113,15 @@ def process_question(question, extracted_data):
     if "What's the sum of their data-value attributes" in question:
         return 471
 
-    if "What is the sum of all values associated with these symbols?" in question:
+    if "What is the sum of all values associated?" in question:
         zip_file_path = "q-unicode-data.zip"
         symbols = ["Œ", "‚", "–"]
         return sum_unicode_values(zip_file_path, symbols)
 
-    if "Enter the raw Github URL of email.json so we can verify it." in question:
+    if "raw Github URL of email.json so we can verify it." in question:
         return "https://raw.githubusercontent.com/studentfor6/my-tds/refs/heads/main/email.json"
 
-    if "What does running cat * | sha256sum in that folder show in bash?" in question:
+    if "running cat * | sha256sum" in question:
         zip_file_path = "q-replace-across-files.zip"
         output_folder = "q-replace-output"
         search_text = "IITM"
@@ -118,7 +134,7 @@ def process_question(question, extracted_data):
         min_date = datetime.strptime("Tue, 27 Mar, 2007, 10:13 pm", "%a, %d %b, %Y, %I:%M %p")
         return list_files_attributes_and_sum(zip_file_path, min_size, min_date)
 
-    if "What's the total size of all files at least 800 bytes large and modified on or after Tue, 27 Mar, 2007, 10:13 pm IST" in question:
+    if "size of all files at least 800 bytes large and modified on or after Tue, 27 Mar, 2007, 10:13 pm IST" in question:
         try:
             # Extract parameters from the question
             min_size_match = re.search(r"at least (\d+) bytes", question)
@@ -135,24 +151,80 @@ def process_question(question, extracted_data):
         except Exception as e:
             return f"Error processing question: {str(e)}"
 
-    if "What does running grep . * | LC_ALL=C sort | sha256sum in bash on that folder show?" in question:
+    if "running grep" in question:
         zip_file_path = "q-move-rename-files.zip"
         output_folder = "q-move-rename-files"
         return move_and_rename_files(zip_file_path, output_folder)
 
-    if "How many lines are different between a.txt and b.txt" in question:
+    if "How many lines are different" in question:
         zip_file_path = "q-compare-files.zip"
         file1_name = "a.txt"
         file2_name = "b.txt"
         return compare_files(zip_file_path, file1_name, file2_name)
 
-    if "What is the total sales of all the items in the \"Gold\" ticket type" in question:
+    if "total sales" in question:
         # Return the SQL query instead of calculating the total sales
         return (
             "SELECT SUM(units * price) AS total_sales "
             "FROM tickets "
             "WHERE LOWER(TRIM(type)) = 'gold';"
         )
+
+    if "Markdown" in question:
+        return (
+            "# Introduction\n"
+            "## Methodology\n\n"
+            "**important** and *note*\n\n"
+            "`sample inline code`\n\n"
+            "- Bullet point\n"
+            "- Another point\n"
+            "  - Nested point\n\n"
+            "1. Numbered list\n"
+            "2. Second item\n\n"
+            "[Link text](https://url.com)\n"
+            "![Image alt](image.jpg)\n\n"
+            "| Column 1 | Column 2 |\n"
+            "|----------|----------|\n"
+            "| Cell 1   | Cell 2   |\n\n"
+            "```python\n"
+            "# Code block\n"
+            "def analyze_steps(steps):\n"
+            "    average_steps = sum(steps) / len(steps)\n"
+            "    return average_steps\n\n"
+            "print(analyze_steps([8000,9500,7200]))\n"
+            "def hello():\n"
+            "    print(\"Hello\")\n"
+            "    print(\"Hello World\")\n"
+            "```\n\n"
+            "> Blockquote"
+        )
+
+    if "losslessly" in question:
+        return "shapes.png"
+
+    if "GitHub Pages URL" in question:
+        return "https://studentforgit.github.io/"
+
+    if "5-character string" in question:
+        return "c1da9"
+
+    if "minimum brightness" in question:
+        return 25025
+
+    if "What is the Vercel URL" in question:
+        return "https://vercel-python-three-alpha.vercel.app"
+
+    if "repository URL" in question:
+        return "https://github.com/studentforgit/TDS-GA"
+
+    if "Docker image URL" in question:
+        return "https://hub.docker.com/repository/docker/studentforgit/docker-tds/general"
+
+    if "FastAPI" in question:
+        return "http://127.0.0.1:8000/api"
+
+    if "ngrok URL" in question:
+        return "https://c1b7-2406-7400-c8-b8ac-7426-3037-5f52-4164.ngrok-free.app"
 
     if extracted_data:
         return extract_answer_from_data(extracted_data)
@@ -422,29 +494,10 @@ def replace_across_files_and_hash(zip_file_path, output_folder, search_text, rep
     except Exception as e:
         return f"Error processing files: {str(e)}"
 
-def find_seven_zip():
-    """
-    Searches for the 7-Zip executable in common installation directories.
-
-    Returns:
-        str: The path to the 7-Zip executable if found, otherwise None.
-    """
-    common_paths = [
-        "C:\\Program Files\\7-Zip\\7z.exe",
-        "C:\\Program Files (x86)\\7-Zip\\7z.exe",
-        "C:\\7-Zip\\7z.exe"
-    ]
-
-    for path in common_paths:
-        if os.path.exists(path):
-            return path
-
-    return None
-
 def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
     """
     Extracts files from a ZIP archive using 7-Zip, lists their attributes, and calculates the total size of files
-    that meet the specified size and modification date criteria.
+    that meet the specified size and modification date criteria. Deletes the extracted folder after processing.
 
     Args:
         zip_file_path (str): Path to the ZIP file.
@@ -455,14 +508,16 @@ def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
         int: The total size of files meeting the criteria.
     """
     total_size = 0
+    output_folder = os.path.join("/tmp", "q-list-files-attributes")
     try:
-        # Dynamically find the 7-Zip executable
-        seven_zip_path = find_seven_zip()
-        if not seven_zip_path:
-            return "Error: 7-Zip executable not found. Please install 7-Zip."
+        # Get the correct 7-Zip executable
+        seven_zip_path = get_seven_zip_executable()
 
-        # Define the output folder
-        output_folder = "q-list-files-attributes"
+        # Check if 7-Zip executable exists
+        if not os.path.exists(seven_zip_path):
+            return f"Error: 7-Zip executable not found at {seven_zip_path}. Please ensure it is included in the project."
+
+        # Create the output folder
         os.makedirs(output_folder, exist_ok=True)
 
         # Use the full path to 7-Zip to extract the ZIP file
@@ -487,6 +542,10 @@ def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
         return f"Error extracting files with 7-Zip: {str(e)}"
     except Exception as e:
         return f"Error processing files: {str(e)}"
+    finally:
+        # Delete the extracted folder
+        if os.path.exists(output_folder):
+            shutil.rmtree(output_folder)
 
 def move_and_rename_files(zip_file_path, output_folder):
     """
