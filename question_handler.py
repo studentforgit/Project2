@@ -422,6 +422,25 @@ def replace_across_files_and_hash(zip_file_path, output_folder, search_text, rep
     except Exception as e:
         return f"Error processing files: {str(e)}"
 
+def find_seven_zip():
+    """
+    Searches for the 7-Zip executable in common installation directories.
+
+    Returns:
+        str: The path to the 7-Zip executable if found, otherwise None.
+    """
+    common_paths = [
+        "C:\\Program Files\\7-Zip\\7z.exe",
+        "C:\\Program Files (x86)\\7-Zip\\7z.exe",
+        "C:\\7-Zip\\7z.exe"
+    ]
+
+    for path in common_paths:
+        if os.path.exists(path):
+            return path
+
+    return None
+
 def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
     """
     Extracts files from a ZIP archive using 7-Zip, lists their attributes, and calculates the total size of files
@@ -437,12 +456,16 @@ def list_files_attributes_and_sum(zip_file_path, min_size, min_date):
     """
     total_size = 0
     try:
+        # Dynamically find the 7-Zip executable
+        seven_zip_path = find_seven_zip()
+        if not seven_zip_path:
+            return "Error: 7-Zip executable not found. Please install 7-Zip."
+
         # Define the output folder
         output_folder = "q-list-files-attributes"
         os.makedirs(output_folder, exist_ok=True)
 
         # Use the full path to 7-Zip to extract the ZIP file
-        seven_zip_path = "C:\\Program Files\\7-Zip\\7z.exe"
         subprocess.run([seven_zip_path, "x", zip_file_path, f"-o{output_folder}"], check=True)
 
         # Iterate through all files in the extracted folder
