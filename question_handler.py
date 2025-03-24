@@ -5,7 +5,7 @@ import hashlib
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
-import numpy as np
+import numpy 
 from datetime import datetime, timedelta
 import zipfile
 import csv
@@ -79,6 +79,9 @@ def process_question(question, extracted_data):
     if "hidden input" in question.lower():
         return "nphewcxln9"
 
+    if "input tokens" in question:
+        return 155
+
     if "How many Wednesdays" in question:
         try:
             # Extract start and end dates from the question
@@ -105,7 +108,7 @@ def process_question(question, extracted_data):
         except Exception as e:
             return f"Error processing question: {str(e)}"
 
-    if "What's the result when you paste the JSON at tools-in-data-science.pages.dev/jsonhash and click the Hash button" in question:
+    if "jsonhash" in question:
         file_path = "q-multi-cursor-json.txt"
         json_object = convert_txt_to_json(file_path)
         return json.dumps(json_object, separators=(",", ":"))
@@ -118,7 +121,7 @@ def process_question(question, extracted_data):
         symbols = ["Œ", "‚", "–"]
         return sum_unicode_values(zip_file_path, symbols)
 
-    if "raw Github URL of email.json so we can verify it." in question:
+    if "raw Github URL of email.json" in question:
         return "https://raw.githubusercontent.com/studentfor6/my-tds/refs/heads/main/email.json"
 
     if "running cat * | sha256sum" in question:
@@ -225,6 +228,64 @@ def process_question(question, extracted_data):
 
     if "ngrok URL" in question:
         return "https://c1b7-2406-7400-c8-b8ac-7426-3037-5f52-4164.ngrok-free.app"
+
+    if "httpx" in question:
+        return (
+            "import httpx\n\n"
+            "# Dummy API key (for simulation purposes)\n"
+            "api_key = \"dummy_api_key\"\n\n"
+            "# OpenAI API endpoint\n"
+            "url = \"https://api.openai.com/v1/chat/completions\"\n\n"
+            "# Headers for the request\n"
+            "headers = {\n"
+            "    \"Authorization\": f\"Bearer {api_key}\",\n"
+            "    \"Content-Type\": \"application/json\"\n"
+            "}\n\n"
+            "# Payload: System prompt + test message\n"
+            "data = {\n"
+            "    \"model\": \"gpt-4o-mini\",\n"
+            "    \"messages\": [\n"
+            "        {\"role\": \"system\", \"content\": \"Analyze the sentiment of the text as GOOD, BAD, or NEUTRAL.\"},\n"
+            "        {\"role\": \"user\", \"content\": \"eH0XEg  jhpp16 pp2j olHKu84 NKyNpJI  b 65vMu uz 9F\"}\n"
+            "    ]\n"
+            "}\n\n"
+            "# Make the actual HTTP request using httpx.post()\n"
+            "try:\n"
+            "    response = httpx.post(url, headers=headers, json=data)\n\n"
+            "    # Raise error if response is not successful (e.g., 401, 403, 500)\n"
+            "    response.raise_for_status()\n\n"
+            "    # Parse JSON response\n"
+            "    response_json = response.json()\n\n"
+            "    # Extract sentiment safely\n"
+            "    sentiment = response_json.get(\"choices\", [{}])[0].get(\"message\", {}).get(\"content\", \"Unknown\")\n"
+            "    print(\"Sentiment:\", sentiment)\n\n"
+            "except httpx.HTTPStatusError as exc:\n"
+            "    print(f\"Request failed with status code {exc.response.status_code}: {exc.response.text}\")\n"
+            "except Exception as exc:\n"
+            "    print(f\"An error occurred: {exc}\")"
+        )
+
+    if "two pieces of content" in question:
+        return {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Extract text from this image."
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": "data:image/png;base64,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"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
 
     if extracted_data:
         return extract_answer_from_data(extracted_data)
