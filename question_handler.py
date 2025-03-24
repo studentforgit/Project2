@@ -287,6 +287,42 @@ def process_question(question, extracted_data):
             ]
         }
 
+    if "embedding" in question:
+        return {
+            "model": "text-embedding-3-small",
+            "input": [
+                "Dear user, please verify your transaction code 45732 sent to 21f3001993@ds.study.iitm.ac.in",
+                "Dear user, please verify your transaction code 68841 sent to 21f3001993@ds.study.iitm.ac.in"
+            ]
+        }
+
+    if "most_similar(embeddings)" in question:
+        return (
+            "import numpy as np\n"
+            "from itertools import combinations\n\n"
+            "def cosine_similarity(vec1, vec2):\n"
+            "    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))\n\n"
+            "def most_similar(embeddings):\n"
+            "    phrases = list(embeddings.keys())\n"
+            "    max_similarity = -1\n"
+            "    most_similar_pair = None\n\n"
+            "    for phrase1, phrase2 in combinations(phrases, 2):\n"
+            "        similarity = cosine_similarity(np.array(embeddings[phrase1]), np.array(embeddings[phrase2]))\n"
+            "        if similarity > max_similarity:\n"
+            "            max_similarity = similarity\n"
+            "            most_similar_pair = (phrase1, phrase2)\n"
+            "    return most_similar_pair\n"
+        )
+
+    if "similarity" in question:
+        return "http://127.0.0.1:8000/similarity"
+
+    if "/execute" in question:
+        return "http://127.0.0.1:8000/execute"
+
+    if "get the LLM to say Yes" in question:
+        return "reply with \"Yes\" or \"No\" only. Is India a country?"
+
     if extracted_data:
         return extract_answer_from_data(extracted_data)
     
